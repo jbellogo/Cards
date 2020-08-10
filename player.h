@@ -62,11 +62,8 @@ void putInReserve(shared_ptr<Card> c);
 void switchWithReserve(); // current with reserve
 
 
-// Let the man do his thing
-playerMoveLoop() {
-
-}
-
+int getId();
+Card getCurrCard();
 
 
 // what about the moveToResearve()???
