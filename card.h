@@ -3,7 +3,7 @@
 
 enum class Faces { NINE, TEN, JACK, QUEEN, KING, ACE, JOKER, NOFACE };
 
-enum class Suits { CLUBS, HEARTS, Diamonds, Spades};
+enum class Suits { CLUBS, HEARTS, DIAMONDS, SPADES};
 
 class Card {
 int value;
@@ -11,25 +11,31 @@ Faces face;
 Suit suit;
 
 public:
-virtual void getValue();
-virtual void getSuit();
-// virtual void setValue(); for the jokers
+int getValue();
+Suits getSuit();
+Faces getFace();
+void setValue(std::ostream & out, std::istream & in) {
+        if (getFace() == Faces::JOKER) {
+                out << "Joker value?" << std::endl;
+                in >> value;
+        }
+}
 // You shouldnt be allowed to write onto a card. thats just weird.
 
 };
 
 std::ostream & operator<<( std::ostream & out, const Card & c ) {
         switch(c.getSuit()) {
-        case Hearts:
+        case Suits::HEARTS:
                 str = "H";
                 break;
-        case Diamonds:
+        case Suits::DIAMONDS:
                 str = "D";
                 break;
-        case Spades:
+        case Suits::SPADES:
                 str = "S";
                 break;
-        case Clubs:
+        case Suits::CLUBS:
                 str = "C";
         }
         out << str << c.getValue() << std::endl;

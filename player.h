@@ -2,64 +2,107 @@
 #define _PLAYER_H_
 #include "card.h"
 
-int MAX_IN_RESERVE = 1;
+int MAX_ATA_TIME = 1;
 
 class PlayCard;
 
 class Player : public Observer {
 // *************** PRIVATE *******************
-// piles of cards
-Deck discard_pile;  // owns these decks
-Deck draw_pile;     // owns these decks
-Card [MAX_IN_RESERVE] reserve; // this way it can be null.
-
+//            ********* Atributes ************
+// info
+int id, cardsToPlay;  // cards to play updated from the numbers of heads in HydraModel observed
+bool hasTurn;
+// Card Models
+Deck discard_pile;  // owns this decks
+Deck draw_pile;     // owns this decks
+std::shared_ptr<Card> reserve; // this way it can be null.
+std::shared_ptr<Card> current; // this way it can be null.
 // observes
 HydraModel &observed_subject;   // observes a HydraModel... particularly its central vec of decks.
 // distills
-std::vector<Cards> topsOfHeads; // hmm implement notify() and stuff
+std::vector<Cards> heads; // hmm implement notify() and stuff
 
-// more info
-Card current_card;
-int id, cardsToPlay;
-
-std::shared_ptr<PlayCard> play_Card_strategy;
-
-void setStrategy(int head_number) {
-        // uses the strategy pattern to change the implementation of getCard
-        if (head_number == 0 ) {
-                *strategy = StratReserve(current_card);
-        }
-        if (topsOfHeads[head_number-1].getValue() == current_card.getValue()) {
-                *strategy = StratSame(current_card);
-        } else if (topsOfHeads[head_number-1].getValue() > current_card.getValue()) {
-                // PlayCard.same()
-                *strategy = StratLess(current_card);
-        } else {
-                throw;
-                // throw("Bruh"); or smth
-        }
-}  // plays current_card on the head number.
-
+//            ********* Methods ************
+// only friend operator>> calls these
+int inReserve() {
+        return reserve ? 1 : 0; // if nullptr
+}
+int leftToPlay() {
+        return cardsToPlay;
+}
+int cardsInDraw(){
+        return draw_pile.size();
+}
+int cardsInDiscard(){
+        return discard_pile.size();
+}
+int cardsTotal(){
+        return cardsInDraw()+ cardsInDiscard();
+}
+friend std::ostream &operator<<(std::ostream &out, const Player &p);
 
 // *************** PUBLIC  *******************
-
 public:
 // player superclass must have : hasWon(), lostRound(), playCard() methods.
 bool hasWon();
-
-void lostRound(); // instance of : lostRound => cuts head
+void lostRound(); // cuts head for HydraPlayer Concrete
 void transferDiscardToDraw(); // shuffles then transfers
-void PlayCard(int on_head_number) {
-        setStrategy(on_head_number);
-        this->strategy->makeMove();
-        // what about all of the objecsts you need to change a decision. you can't pass everything!!
-        // need to pass references to the center deck and the player decks!!! so that the algorith will be able to change them!!!
+
+/*
+ ****************
+   METHODS for playerMoveLoop() in Hydra model
+ ****************
+ */
+void setTurn(bool val); // ex fix
+bool hasTurn(); // { return hasTurn;}                                 // smth needs to update this
+Card draw(); // if draw_pile empty transferDiscardToDraw() then draw
+
+// reserve moves
+void putInReserve(shared_ptr<Card> c);
+void switchWithReserve(); // current with reserve
+
+
+// Let the man do his thing
+playerMoveLoop() {
+
 }
-Card getFromDraft();
-Card getFromDiscard();
+
+
+
+// what about the moveToResearve()???
+void PlayCard(int on_head_number) {
+        current->setValue(std::cin, std::cout); // if you don't have a joker this doesnt do anything
+        if (heads[on_head_number-1].getFace() == Faces::ACE) {
+                // can play
+                observed_subject.addCardToHead(on_head_number, current);
+                cardsToPlay--;
+        } else if (current.getValue() < heads[on_head_number-1].getValue()) {
+                // can play
+                observed_subject.addCardToHead(on_head_number, current);
+                cardsToPlay--;
+        } else if (current.getValue() == heads[on_head_number-1]) {
+                // can play
+                observed_subject.addCardToHead(on_head_number, current);
+                cardsToPlay--;
+                setTurn(false); // ends turn
+        } else {
+                throw PlayException();
+        }
+}
 
 };
 
+// still need to declare it here, outside
+std::ostream & operator<<( std::ostream & out, const Player & p ) {
+        out << "Player " << id << ": "<< p.cardsTotal();
+        out << "(" << p.cardsInDraw() << " draw, " << p.cardsInDiscard() << ")";
+        if (hasTurn) {
+                out << "+ 1 in hand, " << p.leftToPlay() << " remaining, " << p.inReserve()<< " in reserve ";
+        }
+        out << std::endl;
+}
+
+// wrapper class...So we call Human? do we make Player abstract? think so
 class Human : public Player {
 };
 /*
